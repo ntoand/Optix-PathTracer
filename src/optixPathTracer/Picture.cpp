@@ -96,7 +96,7 @@ Image::Image()
 , m_depth(0)
 , m_format(IL_RGBA)
 , m_type(IL_UNSIGNED_BYTE)
-, m_pixels(nullptr)
+, m_pixels(0)
 , m_bpp(0)
 , m_bpl(0)
 , m_bps(0)
@@ -115,7 +115,7 @@ Image::Image(unsigned int width,
 , m_depth(depth)
 , m_format(format)
 , m_type(type)
-, m_pixels(nullptr)
+, m_pixels(0)
 {
   m_bpp = numberOfComponents(m_format) * sizeOfComponents(m_type);
   m_bpl = m_width  * m_bpp;
@@ -125,10 +125,10 @@ Image::Image(unsigned int width,
 
 Image::~Image()
 {
-  if (m_pixels != nullptr)
+  if (m_pixels != 0)
   {
     delete[] m_pixels;
-    m_pixels = nullptr;
+    m_pixels = 0;
   }
 }
 
@@ -142,9 +142,9 @@ Image::Image(const Image& image)
 , m_bpl(image.m_bpl)
 , m_bps(image.m_bps)
 , m_nob(image.m_nob)
-, m_pixels(nullptr)
+, m_pixels(0)
 {
-  if (image.m_pixels != nullptr) 
+  if (image.m_pixels != 0) 
   {
     m_pixels = new unsigned char[image.m_nob];
     memcpy(m_pixels, image.m_pixels, image.m_nob); // Deep copy.
@@ -207,12 +207,18 @@ const Image* Picture::getImageFace(unsigned int indexImage, unsigned int indexFa
   {
     return &m_images[indexImage][indexFace];
   }
-  return nullptr;
+  return NULL;
 }
 
 bool Picture::isCubemap() const
 {
   return m_isCube;
+}
+
+char toLower(char in) {
+  if(in <= 'Z' && in >= 'A')
+    return in - ('Z' - 'z');
+  return in;
 }
 
 bool Picture::load(const std::string& filename)
@@ -234,7 +240,8 @@ bool Picture::load(const std::string& filename)
   if (last != std::string::npos) 
   { 
     ext = filename.substr(last, std::string::npos);
-    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c){ return std::tolower(c); });
+    //std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c){ return std::tolower(c); });
+    std::transform(ext.begin(), ext.end(), ext.begin(), toLower);
   }
 
   bool isDDS = (ext == std::string(".dds")); // .dds images need special handling
@@ -526,7 +533,7 @@ void Picture::setImageData(unsigned int index, const void* pixels, std::vector<c
   if (image->m_pixels)
   {
     delete[] image->m_pixels;
-    image->m_pixels = nullptr;
+    image->m_pixels = NULL;
   }
 
   image->m_pixels = new unsigned char[image->m_nob];

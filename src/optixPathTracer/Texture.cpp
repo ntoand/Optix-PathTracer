@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <cstring>
 #include <iostream>
+#include <limits>
 
 #include "MyAssert.h"
 
@@ -55,10 +56,10 @@ Texture::Texture()
 , m_readMode(RT_TEXTURE_READ_NORMALIZED_FLOAT)
 , m_indexMode(RT_TEXTURE_INDEX_NORMALIZED_COORDINATES)
 , m_integral(0.0f)
-, m_bufferCDF_U(nullptr)
-, m_bufferCDF_V(nullptr)
-, m_buffer(nullptr)
-, m_sampler(nullptr)
+, m_bufferCDF_U(0)
+, m_bufferCDF_V(0)
+, m_buffer(0)
+, m_sampler(0)
 {
 }
 
@@ -113,7 +114,7 @@ bool Texture::createSampler(optix::Context context,
 {
   bool success = false;
 
-  if (picture == nullptr)
+  if (picture == NULL)
   {
     std::cerr << "ERROR: createSampler() called with nullptr picture." << std::endl;
     return success;
@@ -123,7 +124,7 @@ bool Texture::createSampler(optix::Context context,
   // This returns nullptr when this image doesn't exist. Everything else in this function relies on it.
   const Image* image = picture->getImageFace(0, 0);
 
-  if (image == nullptr)
+  if (image == NULL)
   {
     std::cerr << "ERROR: createTextureSamplerAndBuffer() Picture doesn't contain image for LOD 0 of face 0." << std::endl;
     return success;
@@ -249,7 +250,7 @@ bool Texture::createSampler(optix::Context context,
       {
         const Image* image = picture->getImageFace(0, indexFace);
 
-        if (image != nullptr)
+        if (image != NULL)
         {
           void *dst = m_buffer->map(indexFace, RT_BUFFER_MAP_WRITE_DISCARD);
           convert(dst, image->m_pixels, image->m_width * image->m_height * image->m_depth, hostEncoding);
@@ -270,7 +271,7 @@ bool Texture::createSampler(optix::Context context,
         {
           const Image* image = picture->getImageFace(indexImage, indexFace);
 
-          if (image != nullptr )
+          if (image != NULL )
           {
             unsigned char* dst = static_cast<unsigned char*>(m_buffer->map(indexFace, RT_BUFFER_MAP_WRITE_DISCARD));
 
@@ -546,7 +547,6 @@ size_t Texture::getElementSize() const
     return 0;
   }
 }
-
 
 template<typename T> 
 T getAlphaOne()
@@ -932,7 +932,7 @@ void Texture::convert(void *dst, const void *src, size_t elements, unsigned int 
 
 bool Texture::createEnvironment(const Picture* picture)
 {
-  if (picture == nullptr)
+  if (picture == NULL)
   {
     std::cerr << "ERROR: Environment picture is nullptr! Creating white dummy environment." << std::endl;
     createEnvironment();
@@ -942,7 +942,7 @@ bool Texture::createEnvironment(const Picture* picture)
   // Get the Image pointer at image 0 and face 0. Returns nullptr if that doesn't exist.
   const Image* image = picture->getImageFace(0, 0);
 
-  if (image == nullptr)
+  if (image == NULL)
   {
     std::cerr << "ERROR: getImage(0, 0) returned nullptr! Creating white dummy environment." << std::endl;
     createEnvironment();
