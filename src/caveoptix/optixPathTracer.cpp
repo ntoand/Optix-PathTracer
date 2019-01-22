@@ -54,9 +54,6 @@
 #include <Camera.h>
 #include <OptiXMesh.h>
 
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_glfw.h>
-
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -433,10 +430,6 @@ void keyCallback( GLFWwindow* window, int key, int scancode, int action, int mod
         }
     }
 
-    if (!handled) {
-        // forward key event to imgui
-        ImGui_ImplGlfw_KeyCallback( window, key, scancode, action, mods );
-    }
 }
 
 void windowSizeCallback( GLFWwindow* window, int w, int h )
@@ -507,64 +500,19 @@ void glfwRun( GLFWwindow* window, sutil::Camera& camera, const optix::Group top_
 
         glfwPollEvents();                                                        
 
-        ImGui_ImplGlfw_NewFrame();
-
-        ImGuiIO& io = ImGui::GetIO();
-        
-        // Let imgui process the mouse first
-        if (!io.WantCaptureMouse) {
-
-            double x, y;
-            glfwGetCursorPos( window, &x, &y );
-
-            if ( camera.process_mouse( (float)x, (float)y, ImGui::IsMouseDown(0), ImGui::IsMouseDown(1), ImGui::IsMouseDown(2) ) ) {
-                accumulation_frame = 0;
-            }
-        }
-
-        // imgui pushes
-        ImGui::PushStyleVar(ImGuiStyleVar_FramePadding,   ImVec2(0,0) );
-        ImGui::PushStyleVar(ImGuiStyleVar_Alpha,          0.6f        );
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 2.0f        );
-
-		
-        sutil::displayFps( frame_count++ );
-		sutil::displaySpp( accumulation_frame );
-
-        {
-            static const ImGuiWindowFlags window_flags = 
-                    ImGuiWindowFlags_NoTitleBar |
-                    ImGuiWindowFlags_AlwaysAutoResize |
-                    ImGuiWindowFlags_NoMove |
-                    ImGuiWindowFlags_NoScrollbar;
-
-            ImGui::SetNextWindowPos( ImVec2( 2.0f, 70.0f ) );
-            ImGui::Begin("controls", 0, window_flags );
-            if ( ImGui::CollapsingHeader( "Controls", ImGuiTreeNodeFlags_DefaultOpen ) ) {
-                if (ImGui::SliderInt( "max depth", &max_depth, 1, 10 )) {
-                    context["max_depth"]->setInt( max_depth );
-                    accumulation_frame = 0;
-                }
-            }
-            ImGui::End();
-        }
+        //sutil::displayFps( frame_count++ );
+		//sutil::displaySpp( accumulation_frame );
 
 		elapsedTime += sutil::currentTime() - lastTime;
 		if (accumulation_frame == 0)
 			elapsedTime = 0;
-		sutil::displayElapsedTime(elapsedTime);
+		//sutil::displayElapsedTime(elapsedTime);
 		lastTime = sutil::currentTime();
-
-        // imgui pops
-        ImGui::PopStyleVar( 3 );
 
         // Render main window
         context["frame"]->setUint( accumulation_frame++ );
         context->launch( 0, camera.width(), camera.height() );
         sutil::displayBufferGL( getOutputBuffer() );
-
-        // Render gui over it
-        ImGui::Render();
 
         glfwSwapBuffers( window );
     }
@@ -623,7 +571,7 @@ int main( int argc, char** argv )
             }
             out_file = argv[++i];
         }
-		else if (arg == "-scene")
+		else if (arg === "-s" || arg == "--scene")
 		{
 			if (i == argc - 1)
 			{

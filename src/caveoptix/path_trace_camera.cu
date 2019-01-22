@@ -32,6 +32,7 @@
 #include "prd.h"
 #include "rt_function.h"
 #include "random.h"
+#include <optixu/optixu_quaternion_namespace.h>
 
 using namespace optix;
 
@@ -49,6 +50,13 @@ rtBuffer<float4, 2>              accum_buffer;
 rtDeclareVariable(rtObject,      top_object, , );
 rtDeclareVariable(unsigned int,  frame, , );
 rtDeclareVariable(uint2,         launch_index, rtLaunchIndex, );
+
+rtDeclareVariable(float3,       camera_position, , );
+rtDeclareVariable(float4,       camera_orientation, , );
+rtDeclareVariable(float3,       head_offset, , );
+rtDeclareVariable(float3,       tile_tl, , );
+rtDeclareVariable(float3,       tile_bl, , );
+rtDeclareVariable(float3,       tile_br, , );
 
 __device__ inline float4 ToneMap(const float4& c, float limit)
 {
@@ -75,9 +83,24 @@ RT_PROGRAM void pinhole_camera()
   // to provide antialiasing.
   float2 subpixel_jitter = frame == 0 ? make_float2( 0.0f ) : make_float2(rnd( seed ) - 0.5f, rnd( seed ) - 0.5f);
 
+  /*
   float2 d = (make_float2(launch_index) + subpixel_jitter) / make_float2(screen) * 2.f - 1.f;
   float3 ray_origin = eye;
   float3 ray_direction = normalize(d.x*U + d.y*V + W);
+  */
+  float2 pxy = (make_float2(launch_index) + subpixel_jitter) / make_float2(screen);
+  float3 vba = tile_tl - tile_bl;
+  float3 vbc = tile_br - tile_bl;
+
+  float3 ray_origin = tile_bl + vba * (1-pxy.y) + vbc * pxy.x;
+  float3 ray_direction = ray_origin - head_offset;
+
+  optix::Quaternion ori(camera_orientation.x, camera_orientation.y, camera_orientation.z, camera_orientation.w);
+  ray_origin = ori * ray_origin;
+  ray_origin = ray_origin + camera_position;
+
+  ray_direction = normalize(ori * ray_direction);
+
 
   PerRayData_radiance prd;
   prd.depth = 0;

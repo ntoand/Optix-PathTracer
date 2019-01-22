@@ -53,4 +53,4 @@ struct Scene
 	Properties properties;
 };
 
-Scene* LoadScene(const char* filename);
+Scene* LoadScene(const char* filename, int w, int h);

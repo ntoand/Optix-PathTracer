@@ -35,17 +35,11 @@
 #  endif
 #endif
 
-#include <GLFW/glfw3.h>
-
 #include <sutil/sutil.h>
 #include <sutil/HDRLoader.h>
 #include <sutil/PPMLoader.h>
 #include <sampleConfig.h>
 #include <sutil/stb/stb_image_write.h>
-
-#include <imgui/imgui.h>
-#include <imgui/imgui_impl_glfw.h>
-
 #include <optixu/optixu_math_namespace.h>
 
 #include <cstdlib>
@@ -76,87 +70,11 @@ namespace
 // Global variables for GLUT display functions
 RTcontext   g_context           = 0;
 RTbuffer    g_image_buffer      = 0;
-GLFWwindow* g_window            = 0; 
-bool        g_glfw_initialized  = false;
-
 
 void errorCallback(int error, const char* description)                   
 {                                                                                
     std::cerr << "GLFW Error " << error << ": " << description << std::endl;           
 }
-
-
-void keyCallback( GLFWwindow* /*window*/, int key, int /*scancode*/, int action, int /*mods*/ )
-{
-    if( action == GLFW_PRESS )
-    {
-        switch( key )
-        {
-            case GLFW_KEY_Q: // esc
-            case GLFW_KEY_ESCAPE:
-                if( g_context )
-                    rtContextDestroy( g_context );
-                if( g_window )
-                    glfwDestroyWindow( g_window );
-                glfwTerminate();
-                ImGui_ImplGlfw_Shutdown();
-                exit(EXIT_SUCCESS);
-        }
-    }
-}
-
-
-void display()
-{
-    RTsize buffer_width, buffer_height;
-    RT_CHECK_ERROR( rtBufferGetSize2D( g_image_buffer, &buffer_width, &buffer_height) );
-    const GLsizei width  = static_cast<GLsizei>(buffer_width);
-    const GLsizei height = static_cast<GLsizei>(buffer_height);
-
-    RTformat buffer_format;
-    RT_CHECK_ERROR( rtBufferGetFormat( g_image_buffer, &buffer_format ) );
-
-    GLenum gl_data_type;
-    GLenum gl_format;
-
-    switch (buffer_format) {
-        case RT_FORMAT_UNSIGNED_BYTE4:
-            gl_data_type = GL_UNSIGNED_BYTE;
-            gl_format    = GL_BGRA;
-            break;
-
-        case RT_FORMAT_FLOAT:
-            gl_data_type = GL_FLOAT;
-            gl_format    = GL_LUMINANCE;
-            break;
-
-        case RT_FORMAT_FLOAT3:
-            gl_data_type = GL_FLOAT;
-            gl_format    = GL_RGB;
-            break;
-
-        case RT_FORMAT_FLOAT4:
-            gl_data_type = GL_FLOAT;
-            gl_format    = GL_RGBA;
-            break;
-
-        default:
-            fprintf(stderr, "Unrecognized buffer data type or format.\n");
-            exit(2);
-            break;
-    }
-
-    GLvoid* imageData = 0;
-    RT_CHECK_ERROR( rtBufferMap( g_image_buffer, &imageData ) );
-
-    glDrawPixels(width, height, gl_format, gl_data_type, imageData);  // Using default glPixelStore unpack alignment of 4.
-
-    // Now unmap the buffer
-    RT_CHECK_ERROR( rtBufferUnmap( g_image_buffer ) );
-
-    glfwSwapBuffers( g_window );
-}
-
 
 void checkBuffer( RTbuffer buffer )
 {
@@ -362,76 +280,6 @@ optix::GeometryInstance sutil::createOptiXGroundPlane( optix::Context context,
     return instance;
 }
 
-
-GLFWwindow* sutil::initGLFW()
-{
-    // Initialize GLFW
-    if( !glfwInit() )
-        throw Exception( "glfwInit failed.");
-
-    glfwSetErrorCallback( errorCallback );
-
-    g_window = glfwCreateWindow(100, 100, "", NULL, NULL);
-    if (!g_window)
-        throw Exception( "GLFW window or GL context creation failed.");
-    glfwMakeContextCurrent( g_window );
-    glfwSetWindowPos( g_window, 100, 100 );
-
-    glfwSetKeyCallback( g_window, keyCallback );
-
-    g_glfw_initialized = true;
-    
-    ImGui_ImplGlfw_Init( g_window, /*install callbacks*/ true );
-
-    return g_window;
-}
-
-
-void sutil::displayBufferGLFW( const char* window_title, Buffer buffer )
-{
-    displayBufferGLFW(window_title, buffer->get() );
-}
-
-
-void sutil::displayBufferGLFW( const char* window_title, RTbuffer buffer )
-{
-    if( !g_glfw_initialized )
-        throw Exception( "displayGLFWWindow called before initGLFW.");
-
-
-    checkBuffer(buffer);
-    g_image_buffer = buffer;
-
-    RTsize buffer_width, buffer_height;
-    RT_CHECK_ERROR( rtBufferGetSize2D(buffer, &buffer_width, &buffer_height ) );
-
-    GLsizei width  = static_cast<int>( buffer_width );
-    GLsizei height = static_cast<int>( buffer_height );
-    
-    glfwSetWindowTitle( g_window, window_title );
-    glfwSetWindowSize( g_window, width, height );
-
-    // Init state
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    gluOrtho2D(0, width, 0, height);
-    
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    
-    while( !glfwWindowShouldClose( g_window ) )
-    {
-        glfwPollEvents();                                                        
-        display();
-    }
-
-    if( g_context )
-        rtContextDestroy( g_context );
-    
-    glfwDestroyWindow( g_window );
-    glfwTerminate();
-    ImGui_ImplGlfw_Shutdown();
-}
 
 
 void sutil::writeBufferToFile( const char* filename, Buffer buffer)
@@ -692,61 +540,6 @@ namespace
 {
     const float FPS_UPDATE_INTERVAL = 0.5;  //seconds
 } // namespace
-
-void sutil::displayElapsedTime( double elapsedTime )
-{
-	ImGui::SetNextWindowPos( ImVec2( 2.0f, 2.0f ) );
-	ImGui::Begin("stats", 0,
-			ImGuiWindowFlags_NoTitleBar |
-			ImGuiWindowFlags_AlwaysAutoResize |
-			ImGuiWindowFlags_NoMove |
-			ImGuiWindowFlags_NoScrollbar |
-			ImGuiWindowFlags_NoInputs
-			);
-	ImGui::Text( "time: %7.2f", elapsedTime );
-	ImGui::End();
-}
-
-void sutil::displayFps( unsigned int frame_count )
-{
-    static double fps = -1.0;
-    static unsigned last_frame_count = 0;
-    static double last_update_time = sutil::currentTime();
-    static double current_time = 0.0;
-    current_time = sutil::currentTime();
-    if ( current_time - last_update_time > FPS_UPDATE_INTERVAL ) {
-        fps = ( frame_count - last_frame_count ) / ( current_time - last_update_time );
-        last_frame_count = frame_count;
-        last_update_time = current_time;
-    }
-    if ( frame_count > 0 && fps >= 0.0 ) {
-
-        ImGui::SetNextWindowPos( ImVec2( 2.0f, 2.0f ) );
-        ImGui::Begin("stats", 0,
-                ImGuiWindowFlags_NoTitleBar |
-                ImGuiWindowFlags_AlwaysAutoResize |
-                ImGuiWindowFlags_NoMove |
-                ImGuiWindowFlags_NoScrollbar |
-                ImGuiWindowFlags_NoInputs
-                );
-        ImGui::Text( "fps: %7.2f", fps );
-        ImGui::End();
-    }
-}
-
-void sutil::displaySpp( unsigned int frame_count )
-{
-	ImGui::SetNextWindowPos( ImVec2( 2.0f, 2.0f ) );
-	ImGui::Begin("stats", 0,
-			ImGuiWindowFlags_NoTitleBar |
-			ImGuiWindowFlags_AlwaysAutoResize |
-			ImGuiWindowFlags_NoMove |
-			ImGuiWindowFlags_NoScrollbar |
-			ImGuiWindowFlags_NoInputs
-			);
-	ImGui::Text( "spp: %7i", frame_count );
-	ImGui::End();
-}
 
 
 optix::TextureSampler sutil::loadTexture( optix::Context context,

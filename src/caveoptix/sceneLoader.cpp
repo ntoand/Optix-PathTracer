@@ -20,7 +20,7 @@ freely, subject to the following restrictions:
 
 static const int kMaxLineLength = 2048;
 
-Scene* LoadScene(const char* filename)
+Scene* LoadScene(const char* filename, int w, int h)
 {
 	Scene *scene = new Scene;
 	int tex_id = 0;
@@ -164,6 +164,8 @@ Scene* LoadScene(const char* filename)
 				sscanf(line, " width %i", &prop.width);
 				sscanf(line, " height %i", &prop.height);
 			}
+			prop.width = w;
+			prop.height = h;
 			scene->properties = prop;
 		}
 

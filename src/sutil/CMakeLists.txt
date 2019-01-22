@@ -106,8 +106,6 @@ endif()
 # variable will be empty.
 target_link_libraries(${sutil_target}
   optix
-  glfw 
-  imgui 
   ${OPENGL_LIBRARIES}
   )
 if(WIN32)

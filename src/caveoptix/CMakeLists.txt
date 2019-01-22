@@ -30,8 +30,11 @@ include_directories(${SAMPLES_INCLUDE_DIR})
 include_directories(${IL_INCLUDE_DIR})
 
 # See top level CMakeLists.txt file for documentation of OPTIX_add_sample_executable.
-OPTIX_add_sample_executable( optixPathTracer
-    optixPathTracer.cpp
+OPTIX_add_sample_executable( caveoptix
+	app.h
+	app.cpp
+    caveoptix.cpp
+	
 	sceneLoader.cpp
 	Picture.cpp
 	Texture.cpp
