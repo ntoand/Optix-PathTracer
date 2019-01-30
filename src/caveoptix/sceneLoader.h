@@ -32,8 +32,6 @@ freely, subject to the following restrictions:
 #include "material_parameters.h"
 #include "properties.h"
 #include "light_parameters.h"
-#include "Picture.h"
-#include "Texture.h"
 
 #include <cstdlib>
 #include <cstring>
@@ -48,7 +46,6 @@ struct Scene
 	std::vector<optix::Matrix4x4> transforms;
 	std::vector<MaterialParameter> materials;
 	std::vector<LightParameter> lights;
-	std::vector<Texture> textures;
 	std::map<int, std::string> texture_map;
 	Properties properties;
 };

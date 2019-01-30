@@ -10,8 +10,10 @@
 #include <algorithm>
 #include <memory.h>
 
-#include <IL/il.h>
 #include <OptiXMesh.h>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 using namespace std;
 using namespace optix;
@@ -96,26 +98,22 @@ void OptixApp::init(int w, int h) {
 		scene = LoadScene(scene_file.c_str(), m_width, m_height);
 	}
     
-    ilInit();
-
     createContext();
 
     // Load textures
-    for (int i = 0; i < scene->texture_map.size(); i++) {
-        Texture tex;
-        Picture* picture = new Picture;
+    vector<optix::TextureSampler> samplers;
+    for(int i=0; i < scene->texture_map.size(); i++) {
         std::string textureFilename = std::string(sutil::samplesDir()) + "/data/" + scene->texture_map[i];
         std::cout << textureFilename << std::endl;
-        picture->load(textureFilename);
-        tex.createSampler(context, picture);
-        scene->textures.push_back(tex);
-        delete picture;
+        optix::TextureSampler sampler = createSamplerFromFile(textureFilename, optix::make_float3(1.0f));
+        samplers.push_back(sampler);
     }
 
     // Set textures to albedo ID of materials
     for (int i = 0; i < scene->materials.size(); i++) {
         if(scene->materials[i].albedoID != RT_TEXTURE_ID_NULL) {
-            scene->materials[i].albedoID = scene->textures[scene->materials[i].albedoID-1].getId();
+            optix::TextureSampler sampler = samplers[scene->materials[i].albedoID-1];
+            scene->materials[i].albedoID = sampler ? sampler->getId() : RT_TEXTURE_ID_NULL;
         }
     }
 
@@ -536,6 +534,67 @@ std::string OptixApp::ptxPath( const std::string& cuda_file ) {
         cuda_file +
         ".ptx";
 }
+
+optix::TextureSampler OptixApp::createSamplerFromFile(const string& filename, const optix::float3& default_color) {
+    // Create tex sampler and populate with default values
+    optix::TextureSampler sampler = context->createTextureSampler();
+    sampler->setWrapMode( 0, RT_WRAP_REPEAT );
+    sampler->setWrapMode( 1, RT_WRAP_REPEAT );
+    sampler->setWrapMode( 2, RT_WRAP_REPEAT );
+    sampler->setIndexingMode( RT_TEXTURE_INDEX_NORMALIZED_COORDINATES );
+    sampler->setReadMode( RT_TEXTURE_READ_NORMALIZED_FLOAT );
+    sampler->setMaxAnisotropy( 1.0f );
+    sampler->setMipLevelCount( 1u );
+    sampler->setArraySize( 1u );
+
+    int width,height,depth;
+    unsigned char *data = stbi_load(filename.c_str(), &width, &height, &depth, 0);
+    if(data == NULL) {
+        // Create buffer with single texel set to default_color
+        optix::Buffer buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_FLOAT4, 1u, 1u );
+        float* buffer_data = static_cast<float*>( buffer->map() );
+        buffer_data[0] = default_color.x;
+        buffer_data[1] = default_color.y;
+        buffer_data[2] = default_color.z;
+        buffer_data[3] = 1.0f;
+        buffer->unmap();
+
+        sampler->setBuffer( 0u, 0u, buffer );
+        sampler->setFilteringModes( RT_FILTER_LINEAR, RT_FILTER_LINEAR, RT_FILTER_NONE );
+
+        return sampler;
+    }
+
+    const unsigned int nx = width;
+    const unsigned int ny = height;
+
+    optix::Buffer buffer = context->createBuffer( RT_BUFFER_INPUT, RT_FORMAT_FLOAT4, nx, ny );
+    float* buffer_data = static_cast<float*>( buffer->map() );
+
+    for ( unsigned int i = 0; i < nx; ++i ) {
+        for ( unsigned int j = 0; j < ny; ++j ) {
+
+            unsigned int img_index = ( (ny-j-1)*nx + i )*depth;
+            unsigned int buf_index = ( (j     )*nx + i )*4;
+
+            buffer_data[ buf_index + 0 ] = data[ img_index + 0 ] / 255.0f;
+            buffer_data[ buf_index + 1 ] = data[ img_index + 1 ] / 255.0f;
+            buffer_data[ buf_index + 2 ] = data[ img_index + 2 ] / 255.0f;
+            if(depth == 4)
+                buffer_data[ buf_index + 3 ] = data[ img_index + 3 ];
+            else 
+                buffer_data[ buf_index + 3 ] = 1.0f;
+        }
+    }
+
+    buffer->unmap();
+
+    sampler->setBuffer( 0u, 0u, buffer );
+    sampler->setFilteringModes( RT_FILTER_LINEAR, RT_FILTER_LINEAR, RT_FILTER_NONE );
+
+    return sampler;
+}
+
 
 optix::GeometryInstance OptixApp::createSphere(optix::Context context, optix::Material material,
                                     float3 center, float radius) {

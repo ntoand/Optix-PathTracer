@@ -59,8 +59,6 @@ endif()
 find_package(CUDA 7.0 REQUIRED)
 find_package(OpenGL REQUIRED)
 
-find_package(DevIL)
-
 if ( OPENGL_FOUND AND OPENGL_INCLUDE_DIR )
   include_directories( ${OPENGL_INCLUDE_DIR} )
 endif()
@@ -217,9 +215,6 @@ function(OPTIX_add_sample_executable target_name)
     sutil_sdk
     optix
     ${optix_rpath}
-    ${IL_LIBRARIES}
-	  ${ILU_LIBRARIES}
-	  ${ILUT_LIBRARIES}
     )
   if(USING_GNU_CXX)
     target_link_libraries( ${target_name} m ) # Explicitly link against math library (C samples don't do that by default)

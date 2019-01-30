@@ -6,11 +6,11 @@ from cyclops import *
 from omegaToolkit import *
 
 co = caveoptix.initialize()
-co.initOptix("data/spaceship.scene")
+co.initOptix("data/diningroom.scene")
 
 cam = getDefaultCamera()
 cam.getController().setSpeed(1)
-setNearFarZ(1, 1000)
+setNearFarZ(0.1, 1000)
 
 mm = MenuManager.createAndInitialize()
 menu = mm.getMainMenu()
@@ -27,9 +27,9 @@ needRedraw = False
 def handleEvent():
     e = getEvent()
     global needRedraw
-    if(e.isButtonDown(EventFlags.Left) or e.isButtonDown(EventFlags.Button5)): 
+    if(e.isButtonDown(EventFlags.Left) or e.isButtonDown(EventFlags.Button5) or e.isButtonDown(EventFlags.Button7)): 
         needRedraw = True
-    elif(e.isButtonUp(EventFlags.Left) or e.isButtonUp(EventFlags.Button5)):
+    elif(e.isButtonUp(EventFlags.Left) or e.isButtonUp(EventFlags.Button5) or e.isButtonUp(EventFlags.Button7)):
         needRedraw = False
     
 def onUpdate(frame, time, dt):

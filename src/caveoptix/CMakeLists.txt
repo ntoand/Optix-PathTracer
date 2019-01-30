@@ -36,8 +36,6 @@ OPTIX_add_sample_executable( caveoptix
     caveoptix.cpp
 	
 	sceneLoader.cpp
-	Picture.cpp
-	Texture.cpp
 	sceneLoader.h
 	material_parameters.h
 	properties.h
@@ -46,8 +44,7 @@ OPTIX_add_sample_executable( caveoptix
 	prd.h
 	rt_function.h
 	MyAssert.h
-	Picture.h
-	Texture.h
+	stb_image.h
 	
     path_trace_camera.cu
     quad_intersect.cu

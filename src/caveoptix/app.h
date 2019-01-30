@@ -67,6 +67,7 @@ protected:
     void updateMaterialParameters(const std::vector<MaterialParameter> &materials);
     void updateLightParameters(const std::vector<LightParameter> &lightParameters);
     optix::Aabb createGeometry(optix::Group& top_group);
+    optix::TextureSampler createSamplerFromFile(const std::string& filename, const optix::float3& default_color);
 
 public:
     OptixApp(std::string scene_file);
